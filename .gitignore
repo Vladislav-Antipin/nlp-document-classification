@@ -1,0 +1,7 @@
+**/datasets/
+**/*.dat
+**/out/
+__pycache__/
+*.ipynb_checkpoints
+# models/
+.env
