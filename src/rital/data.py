@@ -11,8 +11,8 @@ FILE_MOVIES_UNSEEN = "../../data/movies/movies-unseen.txt"
 # Functions for loading data
 def load_presidents(file=FILE_PRESIDENTS) -> tuple[list[str], list[int]]:
     """
-    -1 for Mitterrand
-    +1 for Chirac
+    0 for Mitterrand
+    1 for Chirac
     """
     texts = []
     labels = []
@@ -20,7 +20,7 @@ def load_presidents(file=FILE_PRESIDENTS) -> tuple[list[str], list[int]]:
         for line in f.readlines():
             speaker, sentence = re.match(r"<\d+:\d+:(.)>\s*(.*)\n", line).groups()
             if speaker == "M":
-                speaker = -1
+                speaker = 0
             elif speaker == "C":
                 speaker = 1
             else:
@@ -42,8 +42,8 @@ def load_presidents_unseen(file=FILE_PRESIDENTS_UNSEEN) -> list[str]:
 
 def load_movies(path=PATH_MOVIES) -> tuple[list[str], list[int]]:
     """
-    -1 for negative
-    +1 for positive
+    0 for negative
+    1 for positive
     """
     texts = []
     labels = []
@@ -56,7 +56,7 @@ def load_movies(path=PATH_MOVIES) -> tuple[list[str], list[int]]:
     for file in (Path(PATH_MOVIES) / "neg").glob("*.txt"):
         with open(file) as f:
             texts.append("".join(f.readlines()))
-            labels.append(-1)
+            labels.append(0)
     return texts, labels
 
 
