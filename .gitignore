@@ -6,6 +6,16 @@ __pycache__/
 # models/
 .env
 
+# embeddings and models:
+notebooks/rital_project/presidents/train_val_embeddings.npz
+notebooks/rital_project/presidents/X_train_full_embeddings.npy
+notebooks/rital_project/presidents/checkpoint-presidents-full_camembert.pth
+notebooks/rital_project/presidents/checkpoint-presidents-mlp_camembert.pth
+notebooks/rital_project/presidents/checkpoint-presidents-mlp_unweighted_camembert.pth
+
+# HF login
+notebooks/rital_project/presidents/login_hf.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

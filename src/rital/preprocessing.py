@@ -81,7 +81,7 @@ def vectorize(
 
 def plot_word_cloud(vocab, values, title=None):
     freq_dict = dict(zip(vocab, values))
-    wc = WordCloud()
+    wc = WordCloud(background_color="white")
     wc.generate_from_frequencies(freq_dict)
     plt.imshow(wc, interpolation="bilinear")
     plt.axis("off")
@@ -91,14 +91,17 @@ def plot_word_cloud(vocab, values, title=None):
     plt.show()
 
 
-def plot_frequencies(vocab, values, top_k=100):
+def plot_frequencies(vocab, values, top_k=100, title=None):
     pairs = sorted(zip(vocab, values), key=lambda x: x[1], reverse=True)[:top_k]
     words, vals = map(list, zip(*pairs))  # zip is like a transpose
     plt.bar(range(top_k), vals, alpha=0.7)
     plt.xticks(
         ticks=range(top_k), labels=words, rotation=90, size=np.maximum(100 / top_k, 5)
     )
-    plt.title(f"Top {top_k} words frequency distribution")
+    if title:
+        plt.title(title)
+    else:
+        plt.title(f"Top {top_k} words frequency distribution")
     plt.ylabel("frequency")
     plt.tight_layout()
     plt.show()
