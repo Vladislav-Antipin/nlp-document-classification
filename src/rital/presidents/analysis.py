@@ -48,7 +48,7 @@ def ordered_train_test_split(X, y, X_embeddings = None, test_size=0.2, random_st
             
         return X_train, X_train_embeddings, y_train, X_val, X_val_embeddings, y_val
     else:
-        return X_train, y_train, X_val , y_val
+        return X_train,None, y_train, X_val ,None, y_val
     
 def plot_train_test_cm(y_train,y_test, y_proba_train, y_proba, title=None):
     fig, axes = plt.subplots(1,2,figsize=(10,7))
@@ -140,7 +140,6 @@ def plot_roc_pr(y_true, y_pred_proba, title=None):
     if title:
         fig.suptitle(title)
     plt.tight_layout()
-    plt.show()
 
 
 class TextStats(BaseEstimator, TransformerMixin):

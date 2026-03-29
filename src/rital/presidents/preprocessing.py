@@ -5,7 +5,7 @@ LOWERCASE_EXCEPTIONS = ["monsieur", "madame", "messieurs", "mesdames", "état","
 # don't remove angles since they identify tags
 PUNCTUATION_EXCEPTIONS = [r"<", r">", r"%"]
 
-def preprocess(text, lowercase=True, remove_punctuation=True,stop_words=None, stemmer=None):
+def preprocess(text, lowercase=True, remove_punctuation=True,stop_words=None, stemmer=None, take_exceptions=True):
     """
     Transform text to remove unwanted bits
     """
@@ -13,8 +13,9 @@ def preprocess(text, lowercase=True, remove_punctuation=True,stop_words=None, st
     # Remove punctuation and whitespaces
     if remove_punctuation:
         punctuation = string.punctuation + string.whitespace
-        for exception in PUNCTUATION_EXCEPTIONS:
-            punctuation = punctuation.replace(exception, "")
+        if take_exceptions:
+            for exception in PUNCTUATION_EXCEPTIONS:
+                punctuation = punctuation.replace(exception, "")
         text = text.translate(str.maketrans(punctuation, " " * len(punctuation)))
 
     # Replace numbers by tokens
@@ -27,7 +28,11 @@ def preprocess(text, lowercase=True, remove_punctuation=True,stop_words=None, st
     tokens = text.split()
     # Make lowercase
     if lowercase:
-        tokens = [ token.lower() if token.lower() not in LOWERCASE_EXCEPTIONS else token for token in tokens ]
+        if take_exceptions:
+            tokens = [ token.lower() if token.lower() not in LOWERCASE_EXCEPTIONS else token for token in tokens ]
+        else:
+            tokens = [ token.lower() for token in tokens ]
+            
 
     # Remove stop words
     if stop_words is not None:

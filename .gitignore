@@ -5,6 +5,11 @@ __pycache__/
 *.ipynb_checkpoints
 # models/
 .env
+notebooks/rital_project/presidents/cc.fr.300.bin.gz
+notebooks/rital_project/presidents/cc.fr.300.bin
+notebooks/rital_project/presidents/cc.en.300.bin.gz
+notebooks/rital_project/presidents/cc.en.300.bin
+notebooks/rital_project/presidents/trained_camembert
 
 # embeddings and models:
 notebooks/rital_project/presidents/train_val_embeddings.npz

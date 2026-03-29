@@ -79,32 +79,36 @@ def vectorize(
     return X, vocab
 
 
-def plot_word_cloud(vocab, values, title=None):
+def plot_word_cloud(vocab, values,ax=None, title=None):
+    if ax is None:
+        fig, ax = plt.subplots()
     freq_dict = dict(zip(vocab, values))
     wc = WordCloud(background_color="white")
     wc.generate_from_frequencies(freq_dict)
-    plt.imshow(wc, interpolation="bilinear")
-    plt.axis("off")
+    ax.imshow(wc, interpolation="bilinear")
+    ax.axis("off")
     if title:
-        plt.title(title)
-    plt.tight_layout()
-    plt.show()
+        ax.set_title(title)
+    return ax
 
 
-def plot_frequencies(vocab, values, top_k=100, title=None):
+def plot_frequencies(vocab, values, top_k=100,ax=None, title=None):
+    if ax is None:
+        fig, ax = plt.subplots()
+        
     pairs = sorted(zip(vocab, values), key=lambda x: x[1], reverse=True)[:top_k]
     words, vals = map(list, zip(*pairs))  # zip is like a transpose
-    plt.bar(range(top_k), vals, alpha=0.7)
-    plt.xticks(
+    ax.bar(range(top_k), vals, alpha=0.7)
+    ax.set_xticks(
         ticks=range(top_k), labels=words, rotation=90, size=np.maximum(100 / top_k, 5)
     )
     if title:
-        plt.title(title)
+        ax.set_title(title)
     else:
-        plt.title(f"Top {top_k} words frequency distribution")
-    plt.ylabel("frequency")
-    plt.tight_layout()
-    plt.show()
+        ax.set_title(f"Top {top_k} words frequency distribution")
+    ax.set_ylabel("frequency")
+    
+    return ax
 
 
 def compute_odds_ratio(X, labels):

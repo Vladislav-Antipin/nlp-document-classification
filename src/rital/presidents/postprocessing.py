@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+
+from xgboost import XGBClassifier
 
 def gaussian_smoothing(pred, size):
     assert size % 2 == 1, "size must be odd"
@@ -67,50 +73,27 @@ def smooth(pred, method="gaussian", **kwargs):
             
     else:
         raise ValueError(f"Unknown smoothing method: {method}")
-
-class SmoothLogisticRegression(BaseEstimator, ClassifierMixin):
-    def __init__(
-        self,
-        l1_ratio = 0,
-        solver = 'lbfgs',
-        class_weight = None,
-        C=1,
-        max_iter=100,
-        smooth_size=17,
-        pred_threshold=0.5,
-    ):
-        self.l1_ratio = l1_ratio
-        self.solver = solver
-        self.class_weight = class_weight
-        self.C = C
-        self.max_iter = max_iter
+    
+class SmoothEstimator(BaseEstimator, ClassifierMixin):
+    def __init__(self, smooth_size, pred_threshold) -> None:
         
         self.smooth_size = smooth_size
         self.pred_threshold = pred_threshold
         
+        self.model_ = None
         self.is_fitted_ = False
-
-    def fit(self, X, y):
-        self.model_ = LogisticRegression(
-            l1_ratio = self.l1_ratio,
-            solver = self.solver,
-            class_weight = self.class_weight,
-            C = self.C,
-            max_iter = self.max_iter
-        )
-        self.model_.fit(X, y)
-        self.coef_ = self.model_.coef_
-        self.is_fitted_ = True
-        return self
-
+        
+ 
+        
     def predict_raw_proba(self, X):
+        if self.model_ is None or not self.is_fitted_:
+            raise ValueError("This SmoothLogisticRegression instance is not fitted yet.")
         proba = self.model_.predict_proba(X)
+
         return proba
     
         
     def predict_proba(self, X, smooth_size = None, pred_threshold=None):
-        if not self.is_fitted_:
-            raise ValueError("This SmoothLogisticRegression instance is not fitted yet.")
         
         if smooth_size is None:
             smooth_size = self.smooth_size
@@ -133,6 +116,235 @@ class SmoothLogisticRegression(BaseEstimator, ClassifierMixin):
     
     def predict(self, X):
         return (self.predict_proba(X)[:,1] > 0.5).astype(int)
+
+class SmoothLogisticRegression(SmoothEstimator):
+    def __init__(
+        self,
+        l1_ratio = 0,
+        solver = 'lbfgs',
+        class_weight = None,
+        C=1,
+        max_iter=100,
+        smooth_size=17,
+        pred_threshold=0.5,
+    ):
+        super().__init__(smooth_size, pred_threshold)
+        self.l1_ratio = l1_ratio
+        self.solver = solver
+        self.class_weight = class_weight
+        self.C = C
+        self.max_iter = max_iter
+
+    def fit(self, X, y):
+        self.model_ = LogisticRegression(
+            l1_ratio = self.l1_ratio,
+            solver = self.solver,
+            class_weight = self.class_weight,
+            C = self.C,
+            max_iter = self.max_iter
+        )
+        self.model_.fit(X, y)
+        self.coef_ = self.model_.coef_
+        self.is_fitted_ = True
+        return self
+    
+
+class SmoothSVM(SmoothEstimator):
+    def __init__(
+        self,
+        C=1.0,
+        kernel="rbf",
+        gamma="scale",
+        class_weight=None,
+        smooth_size=17,
+        pred_threshold=0.5,
+    ):
+        super().__init__(smooth_size, pred_threshold)
+        self.C = C
+        self.kernel = kernel
+        self.gamma = gamma
+        self.class_weight = class_weight
+
+    def fit(self, X, y):
+        self.model_ = SVC(
+            C=self.C,
+            kernel=self.kernel,
+            gamma=self.gamma,
+            class_weight=self.class_weight,
+            probability=True  
+        )
+        self.model_.fit(X, y)
+        self.is_fitted_ = True
+        return self
+    
+
+
+class SmoothMultinomialNB(SmoothEstimator):
+    def __init__(
+        self,
+        alpha=1.0,
+        smooth_size=17,
+        pred_threshold=0.5,
+        fit_prior = True,
+    ):
+        super().__init__(smooth_size, pred_threshold)
+        self.alpha = alpha
+        self.fit_prior = fit_prior
+
+    def fit(self, X, y):
+        self.model_ = MultinomialNB(alpha=self.alpha, fit_prior= self.fit_prior)
+        self.model_.fit(X, y)
+        self.is_fitted_ = True
+        return self
+
+
+class SmoothRandomForest(SmoothEstimator):
+    def __init__(
+        self,
+        n_estimators=100,
+        max_depth=None,
+        class_weight=None,
+        smooth_size=17,
+        pred_threshold=0.5,
+    ):
+        super().__init__(smooth_size, pred_threshold)
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.class_weight = class_weight
+
+    def fit(self, X, y):
+        self.model_ = RandomForestClassifier(
+            n_estimators=self.n_estimators,
+            max_depth=self.max_depth,
+            class_weight=self.class_weight
+        )
+        self.model_.fit(X, y)
+        self.is_fitted_ = True
+        return self
+    
+
+
+class SmoothGradientBoosting(SmoothEstimator):
+    def __init__(
+        self,
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=3,
+        smooth_size=17,
+        pred_threshold=0.5,
+    ):
+        super().__init__(smooth_size, pred_threshold)
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+
+    def fit(self, X, y):
+        self.model_ = GradientBoostingClassifier(
+            n_estimators=self.n_estimators,
+            learning_rate=self.learning_rate,
+            max_depth=self.max_depth
+        )
+        self.model_.fit(X, y)
+        self.is_fitted_ = True
+        return self
+
+class SmoothXGBoost(SmoothEstimator):
+    def __init__(
+        self,
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=3,
+        scale_pos_weight=1.0,  # balance: weight for positive class
+        smooth_size=17,
+        pred_threshold=0.5,
+        random_state=None,
+    ):
+        super().__init__(smooth_size, pred_threshold)
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.scale_pos_weight = scale_pos_weight
+        self.random_state = random_state
+
+    def fit(self, X, y):
+        self.model_ = XGBClassifier(
+            n_estimators=self.n_estimators,
+            learning_rate=self.learning_rate,
+            max_depth=self.max_depth,
+            scale_pos_weight=self.scale_pos_weight,
+            use_label_encoder=False,
+            eval_metric='logloss',
+            random_state=self.random_state
+        )
+        self.model_.fit(X, y)
+        self.is_fitted_ = True
+        return self
+
+# class SmoothLogisticRegression(BaseEstimator, ClassifierMixin):
+#     def __init__(
+#         self,
+#         l1_ratio = 0,
+#         solver = 'lbfgs',
+#         class_weight = None,
+#         C=1,
+#         max_iter=100,
+#         smooth_size=17,
+#         pred_threshold=0.5,
+#     ):
+#         self.l1_ratio = l1_ratio
+#         self.solver = solver
+#         self.class_weight = class_weight
+#         self.C = C
+#         self.max_iter = max_iter
+        
+#         self.smooth_size = smooth_size
+#         self.pred_threshold = pred_threshold
+        
+#         self.is_fitted_ = False
+
+#     def fit(self, X, y):
+#         self.model_ = LogisticRegression(
+#             l1_ratio = self.l1_ratio,
+#             solver = self.solver,
+#             class_weight = self.class_weight,
+#             C = self.C,
+#             max_iter = self.max_iter
+#         )
+#         self.model_.fit(X, y)
+#         self.coef_ = self.model_.coef_
+#         self.is_fitted_ = True
+#         return self
+
+#     def predict_raw_proba(self, X):
+#         proba = self.model_.predict_proba(X)
+#         return proba
+    
+        
+#     def predict_proba(self, X, smooth_size = None, pred_threshold=None):
+#         if not self.is_fitted_:
+#             raise ValueError("This SmoothLogisticRegression instance is not fitted yet.")
+        
+#         if smooth_size is None:
+#             smooth_size = self.smooth_size
+#         if pred_threshold is None:
+#             pred_threshold = self.pred_threshold
+
+#         if smooth_size == 0 and pred_threshold == 0.5:
+#             return self.predict_raw_proba(X)
+        
+#         proba = self.predict_raw_proba(X)[:,1]
+#         if smooth_size != 0:
+#             proba = smooth(proba, method="gaussian", size = smooth_size)
+            
+#         if pred_threshold != 0.5:
+#             proba = adjust_proba(proba, pred_threshold)
+#         proba = proba.reshape(-1,1)
+        
+#         return np.hstack([1-proba,proba])
+
+    
+#     def predict(self, X):
+#         return (self.predict_proba(X)[:,1] > 0.5).astype(int)
         
     
 
@@ -161,10 +373,14 @@ def plot_smoothing(y_true,y_proba,y_proba_smoothed, slc=slice(None, 1000)):
     axes[1].plot(y_pred[slc] + 0.015,".",label="predicted",alpha=0.3)
     axes[1].plot(y_pred_smoothed[slc] + 0.03,".",label="smoothed",alpha=0.7)
     axes[1].set_title("After cut-off of 0.5")
-    fig.suptitle("Temporal smoothing")
+    # fig.suptitle("Temporal smoothing")
+    for ax in axes:
+        ax.set_xlabel("index in the dataset")
+        ax.set_ylabel("probability")
+    
     axes[1].legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     
 
 def adjust_threshold(model, X, y_true, smooth_size = None):
